@@ -200,9 +200,6 @@ int main(int argc, char* argv[])
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
 			}
 			else {
-				// Print command
-				print_command(argvv, filev, in_background);
-
                 // execute commands
                 for (int i = 0; i < command_counter; ++i){
                     pid_t pid = fork();
@@ -216,7 +213,10 @@ int main(int argc, char* argv[])
                         }
                     } else if (pid > 0){ // parent process
                         if (!in_background){ // we want to wait until child process finishes
-                            wait(NULL);
+                            while (wait(&status) > 0);
+                            if (stat < 0){
+                                perror("error managing parent process");
+                            }
                         }
                     } else {
                         perror("fork failed");
