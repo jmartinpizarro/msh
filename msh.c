@@ -196,7 +196,8 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
-	   if (command_counter > 0) {
+        // error handler
+	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
 			}
@@ -204,10 +205,15 @@ int main(int argc, char* argv[])
                 perror("Maximum number of executable commands is 3");
             }
 			else {
+                int fd[2];
+                pipe(fd);
                 // execute commands
                 for (int i = 0; i < command_counter; ++i){
                     pid_t pid = fork();
                     if (pid == 0) { // child process
+                        close(STDIN_FILENO);
+                        dup(fd[0]); // read
+                        close(fd[1]); // close write
                         getCompleteCommand(argvv, i); // get complete list of command
 
                         // execute the command
