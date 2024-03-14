@@ -17,6 +17,7 @@
 #include <signal.h>
 
 #define MAX_COMMANDS 8
+#define MAX_EXECUTABLE_COMMANDS 3
 
 
 // files in case of redirection
@@ -199,6 +200,9 @@ int main(int argc, char* argv[])
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
 			}
+            if (command_counter > MAX_EXECUTABLE_COMMANDS){
+                perror("Maximum number of executable commands is 3");
+            }
 			else {
                 // execute commands
                 for (int i = 0; i < command_counter; ++i){
