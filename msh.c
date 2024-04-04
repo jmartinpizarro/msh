@@ -211,24 +211,22 @@ int main(int argc, char* argv[])
                 for (int i = 0; i < command_counter; ++i){
                     pid_t pid = fork();
                     if (pid == 0) { // child process
+                        if (in_background) {
+                            // Print background process ID
+                            printf("[%d] %d\n", i+1, getpid());
+                        }
                         close(STDIN_FILENO);
                         dup(fd[0]); // read
                         close(fd[1]); // close write
-                        getCompleteCommand(argvv, i); // get complete list of command
 
+                        getCompleteCommand(argvv, i); // get complete list of command
+                                            
                         // execute the command
-                        if (execvp(argvv[i][0], argv_execvp) == -1){
+                        if (execvp(argvv[i][0], argv_execvp) == -1) {
                             perror("Error executing command");
                             exit(1); // exit child process
                         }
-                    } else if (pid > 0){ // parent process
-                        if (!in_background){ // we want to wait until child process finishes
-                            while (wait(&status) > 0);
-                            if (stat < 0){
-                                perror("error managing parent process");
-                            }
-                        }
-                    } else {
+                    } else if (pid < 0) {
                         perror("fork failed");
                     }
                 }
