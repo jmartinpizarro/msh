@@ -215,9 +215,38 @@ int main(int argc, char* argv[])
                             // Print background process ID
                             printf("[%d] %d\n", i+1, getpid());
                         }
-                        close(STDIN_FILENO);
-                        dup(fd[0]); // read
-                        close(fd[1]); // close write
+                        
+                        // Redirection
+                        if (strcmp(filev[0], "0") != 0) { // input redirection
+                            int fd_in = open(filev[0], O_RDONLY);
+                            if (fd_in < 0) {
+                                perror("Error opening input file");
+                                exit(1);
+                            }
+                            dup2(fd_in, STDIN_FILENO);
+                            close(fd_in);
+                        }
+
+                        if (strcmp(filev[1], "0") != 0) { // output redirection
+                            int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+                            if (fd_out < 0) {
+                                perror("Error opening output file");
+                                exit(1);
+                            }
+                            dup2(fd_out, STDOUT_FILENO);
+                            close(fd_out);
+                        }
+
+                        if (i > 0) { // if not the first command, set up pipe
+                            dup2(fd[0], STDIN_FILENO); // read from pipe
+                            close(fd[1]); // close write end of previous pipe
+                        }
+
+                        if (i < command_counter - 1) { // if not the last command, set up pipe
+                            pipe(fd); // create new pipe
+                            dup2(fd[1], STDOUT_FILENO); // write to pipe
+                            close(fd[0]); // close read end of current pipe
+                        }
 
                         getCompleteCommand(argvv, i); // get complete list of command
                                             
@@ -229,6 +258,7 @@ int main(int argc, char* argv[])
                     } else if (pid < 0) {
                         perror("fork failed");
                     }
+
                 }
 			}
 		}
