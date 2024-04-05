@@ -210,16 +210,19 @@ int main(int argc, char* argv[])
                 // execute commands
                 for (int i = 0; i < command_counter; ++i){
                     pid_t pid = fork();
-                    if (pid == 0) { // child process
+                    if (pid == 0)
+                    { // child process
+                        /******************************************/
                         if (in_background) {
                             // Print background process ID
                             printf("[%d] %d\n", i+1, getpid());
                         }
-                        
-                        // Redirection
-                        if (strcmp(filev[0], "0") != 0) { // input redirection
+                        if (strcmp(filev[0], "0") != 0 && i == 0)
+                        {
+                            // Open input file and redirect stdin
                             int fd_in = open(filev[0], O_RDONLY);
-                            if (fd_in < 0) {
+                            if (fd_in < 0)
+                            {
                                 perror("Error opening input file");
                                 exit(1);
                             }
@@ -227,9 +230,12 @@ int main(int argc, char* argv[])
                             close(fd_in);
                         }
 
-                        if (strcmp(filev[1], "0") != 0) { // output redirection
+                        if (strcmp(filev[1], "0") != 0 && i == command_counter - 1)
+                        {
+                            // Open output file and redirect stdout
                             int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
-                            if (fd_out < 0) {
+                            if (fd_out < 0)
+                            {
                                 perror("Error opening output file");
                                 exit(1);
                             }
@@ -237,26 +243,45 @@ int main(int argc, char* argv[])
                             close(fd_out);
                         }
 
-                        if (i > 0) { // if not the first command, set up pipe
-                            dup2(fd[0], STDIN_FILENO); // read from pipe
-                            close(fd[1]); // close write end of previous pipe
+                        if (strcmp(filev[2], "0") != 0 && i == command_counter - 1)
+                        {
+                            // Open error file and redirect stderr
+                            int fd_err = open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+                            if (fd_err < 0)
+                            {
+                                perror("Error opening error file");
+                                exit(1);
+                            }
+                            dup2(fd_err, STDERR_FILENO);
+                            close(fd_err);
                         }
+                        /******************************************/
 
-                        if (i < command_counter - 1) { // if not the last command, set up pipe
-                            pipe(fd); // create new pipe
-                            dup2(fd[1], STDOUT_FILENO); // write to pipe
-                            close(fd[0]); // close read end of current pipe
-                        }
+                        close(fd[1]); // close write end of pipe
 
                         getCompleteCommand(argvv, i); // get complete list of command
-                                            
+
                         // execute the command
-                        if (execvp(argvv[i][0], argv_execvp) == -1) {
+                        if (execvp(argvv[i][0], argv_execvp) == -1)
+                        {
                             perror("Error executing command");
                             exit(1); // exit child process
                         }
-                    } else if (pid < 0) {
-                        perror("fork failed");
+                    }
+                    else if (pid > 0)
+                    { // parent process
+                        if (!in_background)
+                        { // we want to wait until child process finishes
+                            while (wait(&status) > 0);
+                            if (status < 0)
+                            {
+                                perror("Error managing parent process");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        perror("Fork failed");
                     }
 
                 }
