@@ -134,7 +134,6 @@ void getCompleteCommand(char*** argvv, int num_command) {
 		argv_execvp[i] = argvv[num_command][i];
 }
 
-
 /**
  * Main sheell  Loop  
  */
@@ -196,7 +195,9 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
-        // error handler
+        // define internal calculator variable for saving the sum series
+        static int internal_accumulator = 0;
+        // error handlers
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
@@ -205,14 +206,49 @@ int main(int argc, char* argv[])
                 perror("Maximum number of executable commands is 3");
             }
 			else {
+                //print_command(argvv, filev, in_background);
                 int fd[2];
                 pipe(fd);
                 // execute commands
                 for (int i = 0; i < command_counter; ++i){
+                    if (strcmp(argvv[i][0], "mycalc") == 0) 
+                        {
+                        if (argvv[i][1] == NULL || argvv[i][2] == NULL || argvv[i][3] == NULL) 
+                            {
+                            printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
+                            }
+                        else 
+                            {
+                            int num1, num2,result;
+                            char *endptr;
+                            char *operator = argvv[i][2];
+                            num1 = atoi(argvv[i][1]);
+                            num2 = atoi(argvv[i][3]);
+                            result = 0;
+
+                            if (strcmp(operator, "add") == 0)
+                                {
+                                    result = num1 + num2;
+                                    internal_accumulator = internal_accumulator + result;
+                                    printf("[OK] %d + %d = %d; Acc %d\n", num1, num2, result, internal_accumulator);
+                                }
+                            else if (strcmp(operator, "mul") == 0)
+                                {
+                                    result = num1 * num2;
+                                    printf("[OK] %d * %d = %d\n", num1, num2, result);
+                                }
+                            else if (strcmp(operator, "div") == 0)
+                                {
+                                    result = num1 / num2;
+                                    int remainder = num1 % num2;
+                                    printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
+                                }
+                            }                     
+                        }
+                    else {
                     pid_t pid = fork();
                     if (pid == 0)
                     { // child process
-                        /******************************************/
                         if (in_background) {
                             // Print background process ID
                             printf("[%d] %d\n", i+1, getpid());
@@ -255,8 +291,6 @@ int main(int argc, char* argv[])
                             dup2(fd_err, STDERR_FILENO);
                             close(fd_err);
                         }
-                        /******************************************/
-
                         close(fd[1]); // close write end of pipe
 
                         getCompleteCommand(argvv, i); // get complete list of command
@@ -283,7 +317,7 @@ int main(int argc, char* argv[])
                     {
                         perror("Fork failed");
                     }
-
+                    }
                 }
 			}
 		}
