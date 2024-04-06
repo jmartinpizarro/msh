@@ -135,12 +135,12 @@ void getCompleteCommand(char*** argvv, int num_command) {
 }
 
 /**
- * Main sheell  Loop  
+ * Main sheell  Loop
  */
 int main(int argc, char* argv[])
 {
 	/**** Do not delete this code.****/
-	int end = 0; 
+	int end = 0;
 	int executed_cmd_lines = -1;
 	char *cmd_line = NULL;
 	char *cmd_lines[10];
@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
 	history = (struct command*) malloc(history_size *sizeof(struct command));
 	int run_history = 0;
 
-	while (1) 
+	while (1)
 	{
 		int status = 0;
 		int command_counter = 0;
@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
         run_history=0;
     }
     else{
-        // Prompt 
+        // Prompt
         write(STDERR_FILENO, "MSH>>", strlen("MSH>>"));
 
         // Get command
@@ -249,6 +249,7 @@ int main(int argc, char* argv[])
                     pid_t pid = fork();
                     if (pid == 0)
                     { // child process
+                        /******************************************/
                         if (in_background) {
                             // Print background process ID
                             printf("[%d] %d\n", i+1, getpid());
@@ -322,6 +323,6 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
-	
+
 	return 0;
 }
