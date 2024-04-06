@@ -197,6 +197,27 @@ int main(int argc, char* argv[])
 		/************************ STUDENTS CODE ********************************/
         // define internal calculator variable for saving the sum series
         static int internal_accumulator = 0;
+        struct command_history {
+            int command_number;
+            char command[512]; // Assume command does not exceed 512 characters
+        };
+
+        struct command_history history[20]; // History of last 20 commands
+        int history_count = 0; // Counter to keep track of the number of commands in history
+
+        // Function to add commands to history
+        void add_to_history(char *command) {
+            strcpy(history[history_count].command, command);
+            history[history_count].command_number = history_count;
+            history_count++;
+        }
+        // Function to show command history
+        void show_history() {
+            for (int i = 0; i < history_count; i++) {
+                printf("%d %s\n", history[i].command_number, history[i].command);
+            }
+        }
+        
         // error handlers
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
@@ -245,6 +266,31 @@ int main(int argc, char* argv[])
                                 }
                             }                     
                         }
+                    elif (strcmp(argvv[i][0], "myhistory") == 0) {
+                        // If myhistory command is executed without arguments, show history
+                        if (argc == 1) {
+                            show_history();
+                        }
+                        // If a number is passed as argument, execute associated command
+                        else if (argc == 2) {
+                            int command_number = atoi(argvv[i][1]);
+                            if (command_number >= 0 && command_number < history_count) {
+                                printf("Running command %d\n", command_number);
+                                char *command_to_execute = history[comman_number].command;
+                                int result = system(command_to_execute);
+                                if (result == -1) {
+                                    perror("Error exeuting command from history")
+                                }
+                            } else {
+                                printf("ERROR: Command not found\n");
+                            }
+                        }
+                         // In other cases, show an error message
+                        else{
+                            printf("ERROR: Invalid usage of myhistory\n");
+                        }
+                    }
+
                     else {
                     pid_t pid = fork();
                     if (pid == 0)
