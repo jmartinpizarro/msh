@@ -51,11 +51,103 @@ struct command
   int in_background;
 };
 
-int history_size = 20;
-struct command * history;
+int history_buffer_size = 20;
+struct command * HistoryBuffer;
 int head = 0;
 int tail = 0;
 int n_elem = 0;
+int IsFull_Flag = 0;
+
+
+int history_buffer_full(void){
+    return(IsFull_Flag);
+}
+
+int history_buffer_empty(void){
+    int temp = 0;
+    if ((head == tail) && (IsFull_Flag != 1)){
+        temp = 1;
+    }
+    return(temp);
+}
+
+void history_WritetoBuffer(int data_element){
+    //write into circular buffer
+    if (history_buffer_full())
+    {
+
+    }
+    else{
+        HistoryBuffer[head]=data_element;
+        head = (head + 1)%history_buffer_size;
+        if (head == tail){
+            //
+            IsFull_Flag = 1;
+        }
+    }
+}
+
+void history_ReadBuffer(int index, struct command *cmd) {
+    if (history_buffer_empty() || index < 1 || index > n_elem) {
+        printf("Incorrect usage of myhistory\n");
+        return;
+    }
+
+    // Calculate the actual index in the circular buffer
+    int actual_index = (tail + index - 1) % history_buffer_size;
+
+    // Copy the command at the calculated index to the provided cmd pointer
+    *cmd = HistoryBuffer[actual_index];
+}
+
+// Function to execute a command from the history buffer
+void execute_command_from_buffer(int index) {
+    struct command *cmd = &HistoryBuffer[(tail + index - 1) % history_buffer_size];
+    // Prepare arguments for execvp
+    char *args[MAX_COMMANDS + 1];
+    int k = 0;
+    for (int j = 0; j < cmd->num_commands; j++) {
+        for (int l = 0; l < cmd->args[j]; l++) {
+            args[k++] = cmd->argvv[j][l];
+        }
+    }
+    args[k] = NULL;  // Null-terminate the argument list
+
+    // Execute the command using execvp
+    execvp(args[0], args);
+
+    // If execvp fails, print an error message
+    perror("Error executing command");
+    exit(EXIT_FAILURE);
+}
+
+struct command *read_HistoryBuffer(int index) {
+    if (history_buffer_empty()) {
+        printf("History buffer is empty\n");
+        return NULL;
+    }
+
+    if (index < 1 || index > history_buffer_size) {
+        printf("Invalid index\n");
+        return NULL;
+    }
+
+    // Calculate the actual index in the circular buffer
+    int actual_index = (tail + index - 1) % history_buffer_size;
+
+    return &HistoryBuffer[actual_index];
+}
+
+void display_command(struct command *cmd) {
+    printf("Command content:\n");
+    for (int i = 0; i < cmd->num_commands; i++) {
+        printf("Command %d: ", i + 1);
+        for (int j = 0; j < cmd->args[i]; j++) {
+            printf("%s ", cmd->argvv[i][j]);
+        }
+        printf("\n");
+    }
+}
 
 void free_command(struct command *cmd)
 {
@@ -162,7 +254,7 @@ int main(int argc, char* argv[])
 	char ***argvv = NULL;
 	int num_commands;
 
-	history = (struct command*) malloc(history_size *sizeof(struct command));
+	HistoryBuffer = (struct command*) malloc(history_size *sizeof(struct command));
 	int run_history = 0;
 
 	while (1)
@@ -247,30 +339,41 @@ int main(int argc, char* argv[])
                         }
                     else if (strcmp(argvv[i][0], "myhistory") == 0) {
                         // If myhistory command is executed without arguments, show history
-                        if (argc == 1) {
-                            for (int j = 0; j < history_count; j++) {
-                                printf("%d %s\n", history[j].command_number, history[j].command);
+                        if (argc == 1){
+                            //if the history is empty
+                            if (n_elem == 0){
+                                printf("No commands executed yet\n");
+                                return;
                             }
-                        }
-                        // If a number is passed as argument, execute associated command
-                        else if (argc == 2) {
-                            int command_number = atoi(argvv[i][1]);
-                            if (command_number >= 0 && command_number < history_count) {
-                                printf("Running command %d\n", command_number);
-                                char *command_to_execute = history[command_number].command;
-                                int result = system(command_to_execute);
-                                if (result == -1) {
-                                    perror("Error executing command from history");
+                            //Now we will print all the commands executed
+                            printf("Myhistory:\n");
+                            for (int i = 0; i < n_elem; i++){
+                                struct command *cmd = &HistoryBuffer[(tail + i)%history_buffer_size];
+                                printf("%d. ", i + 1);
+                                for (int j = 0; j < cmd->num_commands; j++) {
+                                    for (int k = 0; k < cmd->args[j]; k++) {
+                                        printf("%s ", cmd->argvv[j][k]);
+                                    }
+                                    printf("\n");
                                 }
-                            } else {
-                                printf("ERROR: Command not found\n");
                             }
                         }
-                        // In other cases, show an error message
-                        else {
-                            printf("ERROR: Invalid usage of myhistory\n");
-                        }
+                        else{
+                            // If we have a number between 1-n_elem after "myhistory"
+                            // we take the index given in the command
+                            int index = atoi(argvv[i][1]);
+                            if (index < 1 || index > n_elem){
+                                printf("Incorrect usage of the myhistory command");
+                                return;
+                            }
+                            //Now we read the command in position index
+                            history_ReadBuffer(index, &cmd);
+
+                            )
+                            execute_command_from_buffer(index);
+                        }
                     }
+                
                     else {
                     pid_t pid = fork();
                     if (pid == 0)
@@ -345,6 +448,15 @@ int main(int argc, char* argv[])
                         perror("Fork failed");
                     }
                     }
+
+                    // each time a command is executed, it will be writen into the history buffer
+                    struct command cmd;
+                    store_command(argvv, filev, in_background, &cmd);
+                    HistoryBuffer[head] = cmd;
+                    head = (head + 1) % history_buffer_size;
+                    if (head == tail) {
+                        IsFull_Flag = 1;
+                        }
                 }
 			}
 		}
