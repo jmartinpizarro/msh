@@ -245,32 +245,6 @@ int main(int argc, char* argv[])
                                 }
                             }
                         }
-                    else if (strcmp(argvv[i][0], "myhistory") == 0) {
-                        // If myhistory command is executed without arguments, show history
-                        if (argc == 1) {
-                            for (int j = 0; j < history_count; j++) {
-                                printf("%d %s\n", history[j].command_number, history[j].command);
-                            }
-                        }
-                        // If a number is passed as argument, execute associated command
-                        else if (argc == 2) {
-                            int command_number = atoi(argvv[i][1]);
-                            if (command_number >= 0 && command_number < history_count) {
-                                printf("Running command %d\n", command_number);
-                                char *command_to_execute = history[command_number].command;
-                                int result = system(command_to_execute);
-                                if (result == -1) {
-                                    perror("Error executing command from history");
-                                }
-                            } else {
-                                printf("ERROR: Command not found\n");
-                            }
-                        }
-                        // In other cases, show an error message
-                        else {
-                            printf("ERROR: Invalid usage of myhistory\n");
-                            }
-                        }
                     else {
                     pid_t pid = fork();
                     if (pid == 0)
