@@ -211,13 +211,13 @@ int main(int argc, char* argv[])
                 pipe(fd);
                 // execute commands
                 for (int i = 0; i < command_counter; ++i){
-                    if (strcmp(argvv[i][0], "mycalc") == 0) 
+                    if (strcmp(argvv[i][0], "mycalc") == 0)
                         {
-                        if (argvv[i][1] == NULL || argvv[i][2] == NULL || argvv[i][3] == NULL) 
+                        if (argvv[i][1] == NULL || argvv[i][2] == NULL || argvv[i][3] == NULL)
                             {
                             printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
                             }
-                        else 
+                        else
                             {
                             int num1, num2,result;
                             char *endptr;
@@ -243,8 +243,34 @@ int main(int argc, char* argv[])
                                     int remainder = num1 % num2;
                                     printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
                                 }
-                            }                     
+                            }
                         }
+                    else if (strcmp(argvv[i][0], "myhistory") == 0) {
+                        // If myhistory command is executed without arguments, show history
+                        if (argc == 1) {
+                            for (int j = 0; j < history_count; j++) {
+                                printf("%d %s\n", history[j].command_number, history[j].command);
+                            }
+                        }
+                        // If a number is passed as argument, execute associated command
+                        else if (argc == 2) {
+                            int command_number = atoi(argvv[i][1]);
+                            if (command_number >= 0 && command_number < history_count) {
+                                printf("Running command %d\n", command_number);
+                                char *command_to_execute = history[command_number].command;
+                                int result = system(command_to_execute);
+                                if (result == -1) {
+                                    perror("Error executing command from history");
+                                }
+                            } else {
+                                printf("ERROR: Command not found\n");
+                            }
+                        }
+                        // In other cases, show an error message
+                        else {
+                            printf("ERROR: Invalid usage of myhistory\n");
+                        }
+                    }
                     else {
                     pid_t pid = fork();
                     if (pid == 0)
