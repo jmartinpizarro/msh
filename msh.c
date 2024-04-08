@@ -278,14 +278,17 @@ int main(int argc, char* argv[])
                             }
                         else // Si se proporciona un número como argumento
                         {
-                            int commandToRepresent = atoi(argvv[i][1]);
-                            if (commandToRepresent >= 0 && commandToRepresent < n_elem){
-                                // Mostrar el comando asociado al número proporcionado
-                                printf("Running command %d\n", commandToRepresent);
-                                for (int k = 0; k < history[commandToRepresent].num_commands; k++) {
-                                    printf("%s ", history[commandToRepresent].argvv[k][0]);
+                            int commandToRun = atoi(argvv[i][1]);
+                            if (commandToRun >= 0 && commandToRun < n_elem){
+                                // Ejecutar el comando asociado al número proporcionado
+                                printf("Running command %d\n", commandToRun);
+                                // Obtener el comando completo con sus parámetros
+                                getCompleteCommand(history[commandToRun].argvv, 0);
+                                // Ejecutar el comando
+                                if (execvp(argv_execvp[0], argv_execvp) == -1)
+                                {
+                                    perror("Error executing command");
                                 }
-                                printf("\n");
                             }
                             else {
                                 printf("ERROR: Command not found\n");
