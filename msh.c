@@ -3,7 +3,7 @@
 //  MSH main file
 // Write your msh source code here
 
-//#include "parser.h"
+#include "parser.h"
 #include <stddef.h>			/* NULL */
 #include <sys/types.h>
 #include <sys/stat.h>
