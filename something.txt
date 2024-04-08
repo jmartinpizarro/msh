@@ -1,0 +1,11 @@
+total 124
+-rw-rw-r-- 1 javier javier    86 abr  8 11:34 authors.txt
+-rwxrwxr-x 1 javier javier 11843 mar 13 09:17 checker_os_p2.sh
+-rw-rw-r-- 1 javier javier     5 abr  8 11:34 grade.txt
+-rw-rw-r-- 1 javier javier 20696 feb 21 16:27 libparser.so
+-rw-rw-r-- 1 javier javier   244 feb 21 16:27 Makefile
+-rwxrwxr-x 1 javier javier 28704 abr  8 07:07 msh
+-rw-rw-r-- 1 javier javier 12552 abr  8 07:07 msh.c
+-rw-rw-r-- 1 javier javier 23184 abr  8 07:07 msh.o
+-rw-rw-r-- 1 javier javier    58 mar  9 07:21 README.md
+-rw-rw-r-- 1 javier javier     0 abr  8 11:36 something.txt
