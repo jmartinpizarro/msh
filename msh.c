@@ -393,27 +393,36 @@ int main(int argc, char* argv[])
                     else if (strcmp(argvv[i][0], "myhistory") == 0)
                     {
                         if (argvv[i][1] == NULL) // Si no se proporciona ningún número
-                        {
-                            if (n_elem == 0){
-                                printf("Commands not found\n");
-                            }
-                            else {
-                                // Mostrar los últimos comandos introducidos
-                                for (int k = 0; k < n_elem; k++) {
-                                    printf("%d %s\n", k, history[k].argvv[0][0]);
+                            {
+                                if (n_elem == 0){
+                                    perror("Commands not found\n");
+                                }
+                                else {
+                                    // Mostrar los últimos comandos introducidos
+                                    for (int k = 0; k < n_elem; k++) {
+                                        printf("%d ", k);
+                                        for (int cmd_index = 0; cmd_index < history[k].num_commands; cmd_index++) {
+                                            for (int arg_index = 0; arg_index < history[k].args[cmd_index]; arg_index++) {
+                                                printf("%s ", history[k].argvv[cmd_index][arg_index]);
+                                            }
+                                        }
+                                        printf("\n"); // Agregar un salto de línea después de imprimir cada comando
+                                    }
                                 }
                             }
-                        }
                         else // Si se proporciona un número como argumento
                         {
-                            int commandToRepresent = atoi(argvv[i][1]);
-                            if (commandToRepresent >= 0 && commandToRepresent < n_elem){
-                                // Mostrar el comando asociado al número proporcionado
-                                printf("Running command %d\n", commandToRepresent);
-                                for (int k = 0; k < history[commandToRepresent].num_commands; k++) {
-                                    printf("%s ", history[commandToRepresent].argvv[k][0]);
+                            int commandToRun = atoi(argvv[i][1]);
+                            if (commandToRun >= 0 && commandToRun < n_elem){
+                                // Ejecutar el comando asociado al número proporcionado
+                                printf("Running command %d\n", commandToRun);
+                                // Obtener el comando completo con sus parámetros
+                                getCompleteCommand(history[commandToRun].argvv, 0);
+                                // Ejecutar el comando
+                                if (execvp(argv_execvp[0], argv_execvp) == -1)
+                                {
+                                    perror("Error executing command");
                                 }
-                                printf("\n");
                             }
                             else {
                                 printf("ERROR: Command not found\n");
