@@ -1,0 +1,3 @@
+ls -las
+ls -las | wc
+myhistory

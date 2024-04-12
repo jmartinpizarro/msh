@@ -1,0 +1,3 @@
+mycalc 3 add -8
+mycalc 5 add 13
+env | grep Acc > var

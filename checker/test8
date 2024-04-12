@@ -1,0 +1,1 @@
+cat foo.txt | grep a | grep 1
