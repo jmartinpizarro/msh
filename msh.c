@@ -134,13 +134,14 @@ void getCompleteCommand(char*** argvv, int num_command) {
 		argv_execvp[i] = argvv[num_command][i];
 }
 
+
 /**
- * Main sheell  Loop
+ * Main sheell  Loop  
  */
 int main(int argc, char* argv[])
 {
 	/**** Do not delete this code.****/
-	int end = 0;
+	int end = 0; 
 	int executed_cmd_lines = -1;
 	char *cmd_line = NULL;
 	char *cmd_lines[10];
@@ -165,7 +166,7 @@ int main(int argc, char* argv[])
 	history = (struct command*) malloc(history_size *sizeof(struct command));
 	int run_history = 0;
 
-	while (1)
+	while (1) 
 	{
 		int status = 0;
 		int command_counter = 0;
@@ -177,7 +178,7 @@ int main(int argc, char* argv[])
         run_history=0;
     }
     else{
-        // Prompt
+        // Prompt 
         write(STDERR_FILENO, "MSH>>", strlen("MSH>>"));
 
         // Get command
@@ -195,9 +196,8 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
-        // define internal calculator variable for saving the sum series
         static int internal_accumulator = 0;
-        // error handlers
+        // error handler
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
@@ -205,175 +205,164 @@ int main(int argc, char* argv[])
             if (command_counter > MAX_EXECUTABLE_COMMANDS){
                 perror("Maximum number of executable commands is 3");
             }
-			else {
-                //print_command(argvv, filev, in_background);
-                int fd[2];
-                pipe(fd);
-                // execute commands
-                if (n_elem == history_size) {
+        }
+
+
+        // execute commands
+        int fd[2];
+        int fd_in = 0;
+        int fd_out = 1;
+
+        
+        for (int i = 0; i < command_counter; ++i){
+            getCompleteCommand(argvv, i); // num_command is the index of the command in argvv
+            store_command(argvv, filev, in_background, &history[tail]);
+
+            if (n_elem == history_size) {
                         // Liberar el comando más antiguo
                         free_command(&history[head]);
                         head = (head + 1) % history_size;
-                    } else {
-                        n_elem++;
-                    }
-                for (int i = 0; i < command_counter; ++i){
-                    // Almacenar el nuevo comand
-                    store_command(argvv, filev, in_background, &history[tail]);
-                    tail = (tail + 1) % history_size;
+            } else {
+                n_elem++;
+            }
+            
+            tail = (tail + 1) % history_size;
+            pipe(fd);
 
-                    if (strcmp(argvv[i][0], "mycalc") == 0)
-                        {
-                        if (argvv[i][1] == NULL || argvv[i][2] == NULL || argvv[i][3] == NULL) 
-                            {
-                            printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
-                            }
-                        else 
-                            {
-                            int num1, num2,result;
-                            char *endptr;
-                            char *operator = argvv[i][2];
-                            num1 = atoi(argvv[i][1]);
-                            num2 = atoi(argvv[i][3]);
-                            result = 0;
-
-                            if (strcmp(operator, "add") == 0)
-                                {
-                                    result = num1 + num2;
-                                    internal_accumulator = internal_accumulator + result;
-                                    printf("[OK] %d + %d = %d; Acc %d\n", num1, num2, result, internal_accumulator);
-                                }
-                            else if (strcmp(operator, "mul") == 0)
-                                {
-                                    result = num1 * num2;
-                                    printf("[OK] %d * %d = %d\n", num1, num2, result);
-                                }
-                            else if (strcmp(operator, "div") == 0)
-                                {
-                                    result = num1 / num2;
-                                    int remainder = num1 % num2;
-                                    printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
-                                }
-                            }                     
-                        }
-                    else if (strcmp(argvv[i][0], "myhistory") == 0)
+            if (strcmp(argvv[i][0], "mycalc") == 0)
+                {
+                if (argvv[i][1] == NULL || argvv[i][2] == NULL || argvv[i][3] == NULL) 
                     {
-                        if (argvv[i][1] == NULL) // Si no se proporciona ningún número
+                    printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
+                    }
+                else 
+                    {
+                    int num1, num2,result;
+                    char *endptr;
+                    char *operator = argvv[i][2];
+                    num1 = atoi(argvv[i][1]);
+                    num2 = atoi(argvv[i][3]);
+                    result = 0;
+                    if (strcmp(operator, "add") == 0)
+                        {
+                            result = num1 + num2;
+                            internal_accumulator = internal_accumulator + result;
+                            printf("[OK] %d + %d = %d; Acc %d\n", num1, num2, result, internal_accumulator);
+                        }
+                    else if (strcmp(operator, "mul") == 0)
+                        {
+                            result = num1 * num2;
+                            printf("[OK] %d * %d = %d\n", num1, num2, result);
+                        }
+                    else if (strcmp(operator, "div") == 0)
+                        {
+                            result = num1 / num2;
+                            int remainder = num1 % num2;
+                            printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
+                        }
+                    } 
+            } else if (strcmp(argvv[i][0], "myhistory") == 0)
+                    {
+                        if (argvv[i][1] == NULL) // if there is not any argument
                             {
                                 if (n_elem == 0){
                                     perror("Commands not found\n");
                                 }
                                 else {
-                                    // Mostrar los últimos comandos introducidos
                                     for (int k = 0; k < n_elem; k++) {
                                         printf("%d ", k);
+                                        // iteration and more iterations through a struct that I do not understand :)
                                         for (int cmd_index = 0; cmd_index < history[k].num_commands; cmd_index++) {
                                             for (int arg_index = 0; arg_index < history[k].args[cmd_index]; arg_index++) {
                                                 printf("%s ", history[k].argvv[cmd_index][arg_index]);
                                             }
                                         }
-                                        printf("\n"); // Agregar un salto de línea después de imprimir cada comando
+                                        printf("\n");
                                     }
                                 }
                             }
-                        else // Si se proporciona un número como argumento
-                        {
-                            int commandToRun = atoi(argvv[i][1]);
-                            if (commandToRun >= 0 && commandToRun < n_elem){
-                                // Ejecutar el comando asociado al número proporcionado
-                                printf("Running command %d\n", commandToRun);
-                                // Obtener el comando completo con sus parámetros
-                                getCompleteCommand(history[commandToRun].argvv, 0);
-                                // Ejecutar el comando
-                                if (execvp(argv_execvp[0], argv_execvp) == -1)
-                                {
-                                    perror("Error executing command");
+                        else //if there is a number with an argument
+                            {
+                                int commandToRun = atoi(argvv[i][1]);
+                                if (commandToRun >= 0 && commandToRun < n_elem){
+                                    printf("Running command %d\n", commandToRun);
+                                    getCompleteCommand(history[commandToRun].argvv, 0);
+                                    pid_t pid = fork(); // if not, the program will execute the command but then stop
+                                    if (pid == 0) { 
+                                        execvp(argv_execvp[0], argv_execvp);
+                                        exit(0);
+                                    } else if (pid < 0) { 
+                                        perror("fork failed");
+                                    } else { 
+                                        wait(NULL);
+                                    }
                                 }
                             }
-                            else {
-                                printf("ERROR: Command not found\n");
-                            }
-                        }
-                    }
-                    
-                    else {
-                    pid_t pid = fork();
-                    if (pid == 0)
-                    { // child process
-                        /******************************************/
-                        if (in_background) {
-                            // Print background process ID
-                            printf("[%d] %d\n", i+1, getpid());
-                        }
-                        if (strcmp(filev[0], "0") != 0 && i == 0)
-                        {
-                            // Open input file and redirect stdin
-                            int fd_in = open(filev[0], O_RDONLY);
-                            if (fd_in < 0)
-                            {
-                                perror("Error opening input file");
-                                exit(1);
-                            }
-                            dup2(fd_in, STDIN_FILENO);
-                            close(fd_in);
-                        }
+                    } else {
 
-                        if (strcmp(filev[1], "0") != 0 && i == command_counter - 1)
-                        {
-                            // Open output file and redirect stdout
-                            int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
-                            if (fd_out < 0)
-                            {
-                                perror("Error opening output file");
-                                exit(1);
-                            }
-                            dup2(fd_out, STDOUT_FILENO);
-                            close(fd_out);
-                        }
+            pid_t pid = fork(); // Create a new process
+            if (pid == 0) { // In the child process
 
-                        if (strcmp(filev[2], "0") != 0 && i == command_counter - 1)
-                        {
-                            // Open error file and redirect stderr
-                            int fd_err = open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 0666);
-                            if (fd_err < 0)
-                            {
-                                perror("Error opening error file");
-                                exit(1);
-                            }
-                            dup2(fd_err, STDERR_FILENO);
-                            close(fd_err);
-                        }
-                        close(fd[1]); // close write end of pipe
-
-                        getCompleteCommand(argvv, i); // get complete list of command
-
-                        // execute the command
-                        if (execvp(argvv[i][0], argv_execvp) == -1)
-                        {
-                            perror("Error executing command");
-                            exit(1); // exit child process
-                        }
-                    }
-                    else if (pid > 0)
-                    { // parent process
-                        if (!in_background)
-                        { // we want to wait until child process finishes
-                            while (wait(&status) > 0);
-                            if (status < 0)
-                            {
-                                perror("Error managing parent process");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        perror("Fork failed");
-                    }
-                    }
+            if (dup2(fd_in, STDIN_FILENO) == -1) { // Replace STDIN with fd_in
+                    perror("dup2 failed");
+                    exit(1);
                 }
-			}
-		}
-	}
+            if (i != command_counter - 1) { // If this is not the last command, replace STDOUT with fd[1]
+                if (dup2(fd[1], STDOUT_FILENO) == -1) {
+                    perror("dup2 failed");
+                    exit(1);
+                }
+            }
+                
+            if (strcmp(filev[0], "0") != 0) { // If there is input redirection
+                int fd_in = open(filev[0], O_RDONLY);
+                if (fd_in == -1) {
+                    perror("open failed");
+                    exit(1);
+                }
+                if (dup2(fd_in, STDIN_FILENO) == -1) {
+                    perror("dup2 failed");
+                    exit(1);
+                }
+                close(fd_in);
+            }
 
-	return 0;
-}
+            if (strcmp(filev[1], "0") != 0) { // If there is output redirection
+                int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (fd_out == -1) {
+                    perror("open failed");
+                    exit(1);
+                }
+                if (dup2(fd_out, STDOUT_FILENO) == -1) {
+                    perror("dup2 failed");
+                    exit(1);
+                }
+                close(fd_out);
+            }
+
+            execvp(argv_execvp[0], argv_execvp);
+            
+             // Execute the command
+            } 
+            else if (pid < 0) { // Fork failed
+                perror("fork failed");
+            } 
+            else { // In the parent process
+                if (in_background) { // If the command should be executed in the background
+                    printf("[%d]\n", pid); // Print the PID of the child process
+                } else {
+                wait(NULL); // Wait for the child process to finish
+                }
+            }
+            fd_in = fd[0];
+            close(fd[1]);
+            if (i == command_counter - 1 && strcmp(filev[1], "0") != 0) {
+                close(fd_out);
+            }
+            }
+			}
+    }
+    return 0;
+}	
+
+
