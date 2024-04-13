@@ -1,1 +1,0 @@
-cat noexiste.txt | grep a !> salida_msh

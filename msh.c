@@ -265,10 +265,10 @@ int main(int argc, char* argv[])
                     printf("[%d]\n", pid); // Print the PID of the child process
                 } else {
                 wait(NULL); // Wait for the child process to finish
-                close(fd[1]); // Close the write end of the pipe
-                fd_in = fd[0]; // The output of this command will be the input for the next command
                 }
             }
+            fd_in = fd[0];
+            close(fd[1]);
         }
 			}
         return 0;

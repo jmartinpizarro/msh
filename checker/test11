@@ -1,1 +1,0 @@
-cat foo.txt | grep 1 | grep 2 | grep 3 | grep 4
