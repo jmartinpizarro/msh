@@ -212,8 +212,21 @@ int main(int argc, char* argv[])
         int fd[2];
         int fd_in = 0;
         int fd_out = 1;
+
+        
         for (int i = 0; i < command_counter; ++i){
             getCompleteCommand(argvv, i); // num_command is the index of the command in argvv
+            store_command(argvv, filev, in_background, &history[tail]);
+
+            if (n_elem == history_size) {
+                        // Liberar el comando más antiguo
+                        free_command(&history[head]);
+                        head = (head + 1) % history_size;
+            } else {
+                n_elem++;
+            }
+            
+            tail = (tail + 1) % history_size;
             pipe(fd);
 
             if (strcmp(argvv[i][0], "mycalc") == 0)
@@ -248,9 +261,44 @@ int main(int argc, char* argv[])
                             printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
                         }
                     } 
-            } else if (strcmp(argvv[i][0], "myhistory") == 0){
-                printf("History\n");              
-            } else {
+            } else if (strcmp(argvv[i][0], "myhistory") == 0)
+                    {
+                        if (argvv[i][1] == NULL) // if there is not any argument
+                            {
+                                if (n_elem == 0){
+                                    perror("Commands not found\n");
+                                }
+                                else {
+                                    for (int k = 0; k < n_elem; k++) {
+                                        printf("%d ", k);
+                                        // iteration and more iterations through a struct that I do not understand :)
+                                        for (int cmd_index = 0; cmd_index < history[k].num_commands; cmd_index++) {
+                                            for (int arg_index = 0; arg_index < history[k].args[cmd_index]; arg_index++) {
+                                                printf("%s ", history[k].argvv[cmd_index][arg_index]);
+                                            }
+                                        }
+                                        printf("\n");
+                                    }
+                                }
+                            }
+                        else //if there is a number with an argument
+                            {
+                                int commandToRun = atoi(argvv[i][1]);
+                                if (commandToRun >= 0 && commandToRun < n_elem){
+                                    printf("Running command %d\n", commandToRun);
+                                    getCompleteCommand(history[commandToRun].argvv, 0);
+                                    pid_t pid = fork(); // if not, the program will execute the command but then stop
+                                    if (pid == 0) { 
+                                        execvp(argv_execvp[0], argv_execvp);
+                                        exit(0);
+                                    } else if (pid < 0) { 
+                                        perror("fork failed");
+                                    } else { 
+                                        wait(NULL);
+                                    }
+                                }
+                            }
+                    } else {
 
             pid_t pid = fork(); // Create a new process
             if (pid == 0) { // In the child process
@@ -314,7 +362,7 @@ int main(int argc, char* argv[])
             }
 			}
     }
-        return 0;
-		}	
+    return 0;
+}	
 
 
