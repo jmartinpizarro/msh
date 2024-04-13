@@ -232,7 +232,35 @@ for (int i = 0; i < command_counter; ++i){
                 exit(1);
             }
         }
-        execvp(argv_execvp[0], argv_execvp); // Execute the command
+
+        if (strcmp(filev[0], "0") != 0) { // If there is input redirection
+            int fd_in = open(filev[0], O_RDONLY);
+            if (fd_in == -1) {
+                perror("open failed");
+                exit(1);
+            }
+            if (dup2(fd_in, STDIN_FILENO) == -1) {
+                perror("dup2 failed");
+                exit(1);
+            }
+            close(fd_in);
+        }
+
+        if (strcmp(filev[1], "1") != 0) { // If there is output redirection
+            int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (fd_out == -1) {
+                perror("open failed");
+                exit(1);
+            }
+            if (dup2(fd_out, STDOUT_FILENO) == -1) {
+                perror("dup2 failed");
+                exit(1);
+            }
+            close(fd_out);
+        }
+
+
+    execvp(argv_execvp[0], argv_execvp); // Execute the command
     } else if (pid < 0) { // Fork failed
         perror("fork failed");
     } else { // In the parent process

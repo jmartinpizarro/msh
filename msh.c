@@ -204,56 +204,74 @@ int main(int argc, char* argv[])
             if (command_counter > MAX_EXECUTABLE_COMMANDS){
                 perror("Maximum number of executable commands is 3");
             }
-			else {
-                int fd[2]; // File descriptors for the pipe
-
-// execute commands
-for (int i = 0; i < command_counter; ++i){
-    getCompleteCommand(argvv, i); // num_command is the index of the command in argvv
-
-    if (i < command_counter - 1) { // If this is not the last command, create a pipe
-        if (pipe(fd) == -1) {
-            perror("pipe failed");
-            exit(1);
         }
-    }
 
-    pid_t pid = fork(); // Create a new process
-    if (pid == 0) { // In the child process
-        if (i != 0) { // If this is not the first command, read from the pipe
-            if (dup2(fd[0], STDIN_FILENO) == -1) {
-                perror("dup2 failed");
-                exit(1);
+
+        // execute commands
+        int fd[2];
+        int fd_in = 0;
+        for (int i = 0; i < command_counter; ++i){
+            getCompleteCommand(argvv, i); // num_command is the index of the command in argvv
+            pipe(fd);
+            pid_t pid = fork(); // Create a new process
+            if (pid == 0) { // In the child process
+
+            if (dup2(fd_in, STDIN_FILENO) == -1) { // Replace STDIN with fd_in
+                    perror("dup2 failed");
+                    exit(1);
+                }
+            if (i != command_counter - 1) { // If this is not the last command, replace STDOUT with fd[1]
+                if (dup2(fd[1], STDOUT_FILENO) == -1) {
+                    perror("dup2 failed");
+                    exit(1);
+                }
+            }
+                
+            if (strcmp(filev[0], "0") != 0) { // If there is input redirection
+                int fd_in = open(filev[0], O_RDONLY);
+                if (fd_in == -1) {
+                    perror("open failed");
+                    exit(1);
+                }
+                if (dup2(fd_in, STDIN_FILENO) == -1) {
+                    perror("dup2 failed");
+                    exit(1);
+                }
+                close(fd_in);
+            }
+
+            if (strcmp(filev[1], "0") != 0) { // If there is output redirection
+                int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (fd_out == -1) {
+                    perror("open failed");
+                    exit(1);
+                }
+                if (dup2(fd_out, STDOUT_FILENO) == -1) {
+                    perror("dup2 failed");
+                    exit(1);
+                }
+                close(fd_out);
+            }
+
+            execvp(argv_execvp[0], argv_execvp);
+            
+             // Execute the command
+            } 
+            else if (pid < 0) { // Fork failed
+                perror("fork failed");
+            } 
+            else { // In the parent process
+                if (in_background) { // If the command should be executed in the background
+                    printf("[%d]\n", pid); // Print the PID of the child process
+                } else {
+                wait(NULL); // Wait for the child process to finish
+                close(fd[1]); // Close the write end of the pipe
+                fd_in = fd[0]; // The output of this command will be the input for the next command
+                }
             }
         }
-        if (i < command_counter - 1) { // If this is not the last command, write to the pipe
-            if (dup2(fd[1], STDOUT_FILENO) == -1) {
-                perror("dup2 failed");
-                exit(1);
-            }
-        }
-        execvp(argv_execvp[0], argv_execvp); // Execute the command
-    } else if (pid < 0) { // Fork failed
-        perror("fork failed");
-    } else { // In the parent process
-        if (in_background) { // If the command should be executed in the background
-            printf("[%d]\n", pid); // Print the PID of the child process
-        } else {
-            int status;
-            waitpid(pid, &status, 0); // Wait for the child process to finish
-        }
-    }
-
-    if (i != 0) { // If this is not the first command, close the read end of the pipe
-        close(fd[0]);
-    }
-    if (i < command_counter - 1) { // If this is not the last command, close the write end of the pipe
-        close(fd[1]);
-    }
-}
 			}
-		}
-	}
-	
-	return 0;
-}
+        return 0;
+		}	
+
+
