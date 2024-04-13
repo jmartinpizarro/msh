@@ -196,6 +196,7 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
+        static int internal_accumulator = 0;
         // error handler
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
@@ -210,9 +211,47 @@ int main(int argc, char* argv[])
         // execute commands
         int fd[2];
         int fd_in = 0;
+        int fd_out = 1;
         for (int i = 0; i < command_counter; ++i){
             getCompleteCommand(argvv, i); // num_command is the index of the command in argvv
             pipe(fd);
+
+            if (strcmp(argvv[i][0], "mycalc") == 0)
+                {
+                if (argvv[i][1] == NULL || argvv[i][2] == NULL || argvv[i][3] == NULL) 
+                    {
+                    printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
+                    }
+                else 
+                    {
+                    int num1, num2,result;
+                    char *endptr;
+                    char *operator = argvv[i][2];
+                    num1 = atoi(argvv[i][1]);
+                    num2 = atoi(argvv[i][3]);
+                    result = 0;
+                    if (strcmp(operator, "add") == 0)
+                        {
+                            result = num1 + num2;
+                            internal_accumulator = internal_accumulator + result;
+                            printf("[OK] %d + %d = %d; Acc %d\n", num1, num2, result, internal_accumulator);
+                        }
+                    else if (strcmp(operator, "mul") == 0)
+                        {
+                            result = num1 * num2;
+                            printf("[OK] %d * %d = %d\n", num1, num2, result);
+                        }
+                    else if (strcmp(operator, "div") == 0)
+                        {
+                            result = num1 / num2;
+                            int remainder = num1 % num2;
+                            printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
+                        }
+                    } 
+            } else if (strcmp(argvv[i][0], "myhistory") == 0){
+                printf("History\n");              
+            } else {
+
             pid_t pid = fork(); // Create a new process
             if (pid == 0) { // In the child process
 
@@ -269,8 +308,12 @@ int main(int argc, char* argv[])
             }
             fd_in = fd[0];
             close(fd[1]);
-        }
+            if (i == command_counter - 1 && strcmp(filev[1], "0") != 0) {
+                close(fd_out);
+            }
+            }
 			}
+    }
         return 0;
 		}	
 
