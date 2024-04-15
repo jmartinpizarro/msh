@@ -203,6 +203,17 @@ int main(int argc, char *argv[])
 
         /************************ STUDENTS CODE ********************************/
         static int internal_accumulator = 0;
+        if (n_elem == history_size)
+        {
+            free_command(&history[head]);
+            head = (head + 1) % history_size;
+        }
+        if (argvv != NULL)
+        {
+            store_command(argvv, filev, in_background, &history[tail]);
+            tail = (tail + 1) % history_size;
+            n_elem++;
+        }
         // error handler
         if (command_counter > 0)
         {
@@ -232,10 +243,12 @@ int main(int argc, char *argv[])
 
                 int num1, num2, result;
                 // check if we are working with numbers
-                if (sscanf(argv_execvp[1], "%d", &num1) != 1) {
+                if (sscanf(argv_execvp[1], "%d", &num1) != 1)
+                {
                     printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
                 }
-                else if (sscanf(argv_execvp[3], "%d", &num2) != 1) {
+                else if (sscanf(argv_execvp[3], "%d", &num2) != 1)
+                {
                     printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
                 }
 
@@ -263,8 +276,120 @@ int main(int argc, char *argv[])
                         int remainder = num1 % num2;
                         printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
                     }
-                    else {
+                    else
+                    {
                         printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
+                    }
+                }
+            }
+        }
+        else if (strcmp(argv_execvp[0], "myhistory") == 0)
+        {
+            // if no argument, then we must print the last 20 commands
+            if (argv_execvp[1] == NULL)
+            {
+                for (int k = 0; k < n_elem; k++)
+                {
+                    printf("%d ", k);
+                    for (int i = 0; i < history[k].num_commands; i++)
+                    {
+                        for (int j = 0; j < history[k].args[i]; j++)
+                        {
+                            printf("%s ", history[k].argvv[i][j]);
+                        }
+                        // Si hay más comandos, imprimir un pipe
+                        if (i < history[k].num_commands - 1)
+                        {
+                            printf("| ");
+                        }
+                    }
+                    printf("\n");
+                }
+            }
+            // if we have an argument, then we must print the last n commands
+            // Si tenemos un argumento, entonces debemos ejecutar el comando en esa posición del historial
+            else
+            {
+                int n = atoi(argv_execvp[1]);
+                if (n >= n_elem)
+                {
+                    printf("Error: The number of commands is %d\n", n_elem);
+                }
+                else
+                {
+                    // Buscar el comando en el historial
+                    struct command cmd = history[n];
+
+                    // Crear una tubería para cada par de comandos
+                    int pipes[cmd.num_commands - 1][2];
+                    for (int i = 0; i < cmd.num_commands - 1; i++)
+                    {
+                        if (pipe(pipes[i]) == -1)
+                        {
+                            perror("msh");
+                        }
+                    }
+
+                    // Crear un proceso hijo para cada comando
+                    for (int i = 0; i < cmd.num_commands; i++)
+                    {
+                        pid_t pid = fork();
+                        if (pid == 0)
+                        {
+                            // Estamos en el proceso hijo
+
+                            // Si no es el primer comando, conectar la entrada estándar a la salida del comando anterior
+                            if (i != 0)
+                            {
+                                if (dup2(pipes[i - 1][0], STDIN_FILENO) == -1)
+                                {
+                                    perror("msh");
+                                }
+                            }
+
+                            // Si no es el último comando, conectar la salida estándar a la entrada del comando siguiente
+                            if (i != cmd.num_commands - 1)
+                            {
+                                if (dup2(pipes[i][1], STDOUT_FILENO) == -1)
+                                {
+                                    perror("msh");
+                                }
+                            }
+
+                            // Cerrar todos los descriptores de archivo de la tubería
+                            for (int j = 0; j < cmd.num_commands - 1; j++)
+                            {
+                                close(pipes[j][0]);
+                                close(pipes[j][1]);
+                            }
+
+                            // Ejecutar el comando
+                            if (execvp(cmd.argvv[i][0], cmd.argvv[i]) == -1)
+                            {
+                                perror("msh");
+                            }
+
+                            // Si llegamos aquí, entonces hubo un error
+                            exit(EXIT_FAILURE);
+                        }
+                        else if (pid < 0)
+                        {
+                            // Hubo un error al crear el proceso hijo
+                            perror("msh");
+                        }
+                    }
+
+                    // Cerrar todos los descriptores de archivo de la tubería en el proceso padre
+                    for (int i = 0; i < cmd.num_commands - 1; i++)
+                    {
+                        close(pipes[i][0]);
+                        close(pipes[i][1]);
+                    }
+
+                    // Esperar a que todos los procesos hijos terminen
+                    for (int i = 0; i < cmd.num_commands; i++)
+                    {
+                        wait(NULL);
                     }
                 }
             }
@@ -327,7 +452,7 @@ int main(int argc, char *argv[])
                 }
             }
             else
-            { 
+            {
                 if (filehandle != 0)
                 {
                     if ((close(filehandle)) < 0)
@@ -336,9 +461,9 @@ int main(int argc, char *argv[])
                     }
                 }
                 if (in_background)
-                    {
-                        printf("[%d]\n", getpid());
-                    }
+                {
+                    printf("[%d]\n", getpid());
+                }
                 if (!in_background)
                 {
                     while (wait(&stat) > 0)
@@ -353,7 +478,7 @@ int main(int argc, char *argv[])
         else
         {
             int n = command_counter;
-            int fd[2]; // for pipes 
+            int fd[2];        // for pipes
             int pid, status2; // status 2 is for the same reason as status, but for not renaming it
             int filehandle = 0;
 
@@ -388,7 +513,7 @@ int main(int argc, char *argv[])
                     }
                     if ((close(fd[1])) < 0)
                     {
-                        perror("fail in dup");                    
+                        perror("fail in dup");
                     }
                     exit(0);
                 case 0:
@@ -396,7 +521,7 @@ int main(int argc, char *argv[])
                     {
                         if ((close(2)) < 0)
                         {
-                            perror("fail in dup");                        
+                            perror("fail in dup");
                         }
 
                         if ((filehandle = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0)
@@ -459,7 +584,7 @@ int main(int argc, char *argv[])
                         {
                             if ((close(1)) < 0)
                             {
-                            perror("fail in close dup");
+                                perror("fail in close dup");
                             }
 
                             if ((filehandle = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0)
