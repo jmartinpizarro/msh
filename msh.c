@@ -254,7 +254,6 @@ int main(int argc, char *argv[])
 
                 else
                 {
-                    char *endptr;
                     char *operator= argv_execvp[2];
                     num1 = atoi(argv_execvp[1]);
                     num2 = atoi(argv_execvp[3]);
@@ -263,18 +262,27 @@ int main(int argc, char *argv[])
                     {
                         result = num1 + num2;
                         internal_accumulator = internal_accumulator + result;
-                        printf("[OK] %d + %d = %d; Acc %d\n", num1, num2, result, internal_accumulator);
+                        char acc[10]; // for the env var
+                        sprintf(acc, "%d", internal_accumulator);
+                        setenv("Acc", acc, 1);
+                        char output[100];
+                        sprintf(output, "[OK] %d + %d = %d; Acc %s\n", num1, num2, result, getenv("Acc"));
+                        fprintf(stderr, "%s", output);
                     }
                     else if (strcmp(operator, "mul") == 0)
                     {
                         result = num1 * num2;
-                        printf("[OK] %d * %d = %d\n", num1, num2, result);
+                        char output[100];
+                        sprintf(output, "[OK] %d * %d = %d\n", num1, num2, result);
+                        fprintf(stderr, "%s", output);
                     }
                     else if (strcmp(operator, "div") == 0)
                     {
                         result = num1 / num2;
                         int remainder = num1 % num2;
-                        printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
+                        char output[100];
+                        sprintf(output, "[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
+                        fprintf(stderr, "%s", output);
                     }
                     else
                     {
@@ -288,22 +296,27 @@ int main(int argc, char *argv[])
             // if no argument, then we must print the last 20 commands
             if (argv_execvp[1] == NULL)
             {
-                for (int k = 0; k < n_elem; k++)
+                for (int k = 0; k < n_elem  - 1; k++)
                 {
-                    printf("%d ", k);
+                    int number = k;
+                    fprintf(stderr, "%d ", number);
                     for (int i = 0; i < history[k].num_commands; i++)
                     {
                         for (int j = 0; j < history[k].args[i]; j++)
                         {
-                            printf("%s ", history[k].argvv[i][j]);
+                            char output[100];
+                            sprintf(output, "%s ", history[k].argvv[i][j]);
+                            fprintf(stderr, "%s", output);
                         }
                         // Si hay más comandos, imprimir un pipe
                         if (i < history[k].num_commands - 1)
                         {
-                            printf("| ");
+                            char output[100] = "| ";
+                            fprintf(stderr, "%s", output);
                         }
                     }
-                    printf("\n");
+                    char output[100] = "\n";
+                    fprintf(stderr, "%s", output);
                 }
             }
             // if we have an argument, then we must print the last n commands
@@ -314,6 +327,9 @@ int main(int argc, char *argv[])
                 if (n >history_size){
                     printf("ERROR: Command not found\n");
                 }
+                char output[100];
+                sprintf(output, "Running command %d\n", n);
+                fprintf(stderr, "%s", output);
 
                 // pipe for each even command
                 int pipes[cmd.num_commands - 1][2];
@@ -355,7 +371,6 @@ int main(int argc, char *argv[])
                             close(pipes[j][0]);
                             close(pipes[j][1]);
                         }
-                        printf("Running command %d\n", n);
                         // execute command
                         if (execvp(cmd.argvv[i][0], cmd.argvv[i]) == -1)
                         {
