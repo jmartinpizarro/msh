@@ -311,6 +311,9 @@ int main(int argc, char *argv[])
             {
                 int n = atoi(argv_execvp[1]);
                 struct command cmd = history[n];
+                if (n >history_size){
+                    printf("ERROR: Command not found\n");
+                }
 
                 // pipe for each even command
                 int pipes[cmd.num_commands - 1][2];
@@ -352,7 +355,7 @@ int main(int argc, char *argv[])
                             close(pipes[j][0]);
                             close(pipes[j][1]);
                         }
-
+                        printf("Running command %d\n", n);
                         // execute command
                         if (execvp(cmd.argvv[i][0], cmd.argvv[i]) == -1)
                         {
