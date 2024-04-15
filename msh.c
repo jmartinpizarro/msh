@@ -307,90 +307,77 @@ int main(int argc, char *argv[])
                 }
             }
             // if we have an argument, then we must print the last n commands
-            // Si tenemos un argumento, entonces debemos ejecutar el comando en esa posición del historial
             else
             {
                 int n = atoi(argv_execvp[1]);
-                if (n >= n_elem)
+                struct command cmd = history[n];
+
+                // pipe for each even command
+                int pipes[cmd.num_commands - 1][2];
+                for (int i = 0; i < cmd.num_commands - 1; i++)
                 {
-                    printf("Error: The number of commands is %d\n", n_elem);
+                    if (pipe(pipes[i]) == -1)
+                    {
+                        perror("msh");
+                    }
                 }
-                else
+
+                for (int i = 0; i < cmd.num_commands; i++)
                 {
-                    // Buscar el comando en el historial
-                    struct command cmd = history[n];
-
-                    // Crear una tubería para cada par de comandos
-                    int pipes[cmd.num_commands - 1][2];
-                    for (int i = 0; i < cmd.num_commands - 1; i++)
+                    pid_t pid = fork();
+                    if (pid == 0)
                     {
-                        if (pipe(pipes[i]) == -1)
+
+                        // if not first command, edit input descriptor
+                        if (i != 0)
                         {
-                            perror("msh");
+                            if (dup2(pipes[i - 1][0], STDIN_FILENO) == -1)
+                            {
+                                perror("pipe error");
+                            }
                         }
-                    }
 
-                    // Crear un proceso hijo para cada comando
-                    for (int i = 0; i < cmd.num_commands; i++)
-                    {
-                        pid_t pid = fork();
-                        if (pid == 0)
+                        // if not the last command, edit output descriptor
+                        if (i != cmd.num_commands - 1)
                         {
-                            // Estamos en el proceso hijo
-
-                            // Si no es el primer comando, conectar la entrada estándar a la salida del comando anterior
-                            if (i != 0)
+                            if (dup2(pipes[i][1], STDOUT_FILENO) == -1)
                             {
-                                if (dup2(pipes[i - 1][0], STDIN_FILENO) == -1)
-                                {
-                                    perror("msh");
-                                }
+                                perror("pipe error");
                             }
-
-                            // Si no es el último comando, conectar la salida estándar a la entrada del comando siguiente
-                            if (i != cmd.num_commands - 1)
-                            {
-                                if (dup2(pipes[i][1], STDOUT_FILENO) == -1)
-                                {
-                                    perror("msh");
-                                }
-                            }
-
-                            // Cerrar todos los descriptores de archivo de la tubería
-                            for (int j = 0; j < cmd.num_commands - 1; j++)
-                            {
-                                close(pipes[j][0]);
-                                close(pipes[j][1]);
-                            }
-
-                            // Ejecutar el comando
-                            if (execvp(cmd.argvv[i][0], cmd.argvv[i]) == -1)
-                            {
-                                perror("msh");
-                            }
-
-                            // Si llegamos aquí, entonces hubo un error
-                            exit(EXIT_FAILURE);
                         }
-                        else if (pid < 0)
+
+                        // Close everything
+                        for (int j = 0; j < cmd.num_commands - 1; j++)
                         {
-                            // Hubo un error al crear el proceso hijo
-                            perror("msh");
+                            close(pipes[j][0]);
+                            close(pipes[j][1]);
                         }
-                    }
 
-                    // Cerrar todos los descriptores de archivo de la tubería en el proceso padre
-                    for (int i = 0; i < cmd.num_commands - 1; i++)
-                    {
-                        close(pipes[i][0]);
-                        close(pipes[i][1]);
-                    }
+                        // execute command
+                        if (execvp(cmd.argvv[i][0], cmd.argvv[i]) == -1)
+                        {
+                            perror("error executing command");
+                        }
 
-                    // Esperar a que todos los procesos hijos terminen
-                    for (int i = 0; i < cmd.num_commands; i++)
-                    {
-                        wait(NULL);
+                        // fatal crash here, not my problem
+                        exit(EXIT_FAILURE);
                     }
+                    else if (pid < 0)
+                    {
+                        perror("fork failed");
+                    }
+                }
+
+                // close pipes for the parent
+                for (int i = 0; i < cmd.num_commands - 1; i++)
+                {
+                    close(pipes[i][0]);
+                    close(pipes[i][1]);
+                }
+
+                for (int i = 0; i < cmd.num_commands; i++)
+                {
+                    wait(NULL);
                 }
             }
         }
@@ -403,75 +390,72 @@ int main(int argc, char *argv[])
                 return (-1);
             }
 
-            int filehandle = 0;
-            int stat;
             if (pid == 0)
             {
-                // output redirection
-                if (strcmp(filev[1], "0") != 0)
-                {
-
-                    if ((close(1)) < 0)
-                    {
-                        perror("fail in dup");
-                    }
-
-                    if ((filehandle = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0)
-                    {
-                        perror("fail in open pointer\n");
-                    }
-                }
                 // input redirection
                 if (strcmp(filev[0], "0") != 0)
-                {
-                    if ((close(0)) < 0)
+                { // If there is input redirection
+                    int fd_in = open(filev[0], O_RDONLY);
+                    if (fd_in == -1)
                     {
-                        perror("fail in dup");
+                        perror("open failed");
+                        exit(1);
                     }
-                    if ((filehandle = open(filev[0], O_RDWR, 0644)) < 0)
+                    if (dup2(fd_in, STDIN_FILENO) == -1)
                     {
-                        perror("fail in open pointer\n");
+                        perror("dup2 failed");
+                        exit(1);
                     }
+                    close(fd_in);
+                }
+                // output redirection
+                if (strcmp(filev[1], "0") != 0)
+                { // If there is output redirection
+                    int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                    if (fd_out == -1)
+                    {
+                        perror("open failed");
+                        exit(1);
+                    }
+                    if (dup2(fd_out, STDOUT_FILENO) == -1)
+                    {
+                        perror("dup2 failed");
+                        exit(1);
+                    }
+                    close(fd_out);
                 }
                 // error redirection, where is this used for? idk
                 if (strcmp(filev[2], "0") != 0)
                 {
-                    if ((close(2)) < 0)
+                    int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                    if (fd_out == -1)
                     {
-                        perror("fail in dup");
+                        perror("open failed");
+                        exit(1);
                     }
-                    if ((filehandle = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0)
+                    if (dup2(fd_out, STDOUT_FILENO) == -1)
                     {
-                        perror("fail in open pointer\n");
+                        perror("dup2 failed");
+                        exit(1);
                     }
+                    close(fd_out);
                 }
                 // if -1, then we got a big problem here. Not my problem anyway
                 if (execvp(argv_execvp[0], argv_execvp) < 0)
                 {
                     perror("command exec is down\n");
+                    exit(EXIT_FAILURE);
                 }
             }
             else
             {
-                if (filehandle != 0)
-                {
-                    if ((close(filehandle)) < 0)
-                    {
-                        perror("fail in dup");
-                    }
-                }
                 if (in_background)
                 {
                     printf("[%d]\n", getpid());
                 }
-                if (!in_background)
+                else
                 {
-                    while (wait(&stat) > 0)
-                        ;
-                    if (stat < 0)
-                    {
-                        perror("Error\n"); // Cambiar todos los errores por perror
-                    }
+                    wait(NULL);
                 }
             }
         }
@@ -491,7 +475,7 @@ int main(int argc, char *argv[])
 
             for (int i = 0; i < n; i++)
             {
-                // Creacion del siguiente pipe, si es el ultimo proceso, no se crea
+                // if last command, do not create a pipe
                 if (i != n - 1)
                 {
                     if (pipe(fd) < 0)
@@ -501,7 +485,7 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                switch (pid = fork())
+                switch (pid = fork()) // cases for the fork, more convenient than if due to 200 houndred more lines of code :O
                 {
 
                 case -1:
@@ -519,55 +503,40 @@ int main(int argc, char *argv[])
                 case 0:
                     if (strcmp(filev[2], "0") != 0)
                     {
-                        if ((close(2)) < 0)
-                        {
-                            perror("fail in dup");
-                        }
-
                         if ((filehandle = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0)
                         {
                             perror("could not open the file\n");
+                        }
+                        else if (dup2(filehandle, 2) < 0)
+                        {
+                            perror("fail in dup2");
                         }
                     }
 
                     if (i == 0 && strcmp(filev[0], "0") != 0)
                     {
-                        if ((close(0)) < 0)
-                        {
-                            perror("fail in dup");
-                        }
                         if ((filehandle = open(filev[0], O_RDWR, 0644)) < 0)
                         {
                             perror("could not open the file\n");
                         }
+                        else if (dup2(filehandle, 0) < 0)
+                        {
+                            perror("fail in dup2");
+                        }
                     }
                     else
                     {
-                        if ((close(0)) < 0)
+                        if (dup2(in, 0) < 0)
                         {
-                            perror("fail in close dup");
-                        }
-                        if (dup(in) < 0)
-                        {
-                            perror("fail in dup\n");
-                        }
-                        if ((close(in)) < 0)
-                        {
-                            perror("fail in close dup");
+                            perror("fail in dup2\n");
                         }
                     }
 
                     if (i != n - 1) // pipes generation for the next command (if it is not the last one)
                     {
-
-                        if ((close(1)) < 0)
+                        if (dup2(fd[1], 1) < 0)
                         {
-                            perror("fail in close dup");
-                        }
-
-                        if (dup(fd[1]) < 0)
-                        {
-                            perror("fail in dup\n");
+                            perror("fail in dup2\n");
                         }
                         if ((close(fd[0])) < 0)
                         {
@@ -614,13 +583,9 @@ int main(int argc, char *argv[])
                     }
                     if (i != n - 1)
                     {
-                        if ((in = dup(fd[0])) < 0)
+                        if ((in = dup2(fd[0], in)) < 0)
                         {
-                            perror("fail in dup\n");
-                        }
-                        if (dup(fd[0]) < 0)
-                        {
-                            perror("fail in dup\n");
+                            perror("fail in dup2\n");
                         }
                         if ((close(fd[1])) < 0)
                         {
@@ -631,7 +596,6 @@ int main(int argc, char *argv[])
             }
             if (filehandle != 0)
             {
-
                 if ((close(filehandle)) < 0)
                 {
                     perror("fail in close dup");
@@ -639,12 +603,7 @@ int main(int argc, char *argv[])
             }
             if (!in_background) // this for executing the first, then the second, .... commands in that order
             {
-                while (wait(&status2) > 0)
-                    ;
-                if (stat < 0)
-                {
-                    perror("error\n");
-                }
+                wait(NULL);
             }
         }
     }
