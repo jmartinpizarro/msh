@@ -3,13 +3,8 @@
 //  MSH main file
 // Write your msh source code here
 
-<<<<<<< HEAD
-#include "parser.h"
-#include <stddef.h>			/* NULL */
-=======
 // #include "parser.h"
 #include <stddef.h> /* NULL */
->>>>>>> 726b356b99ab985e5592f22f92629d3d1a9f9b02
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -55,108 +50,11 @@ struct command
     int in_background;
 };
 
-<<<<<<< HEAD
-int history_buffer_size = 20;
-struct command * HistoryBuffer;
-=======
 int history_size = 20;
 struct command *history;
->>>>>>> 726b356b99ab985e5592f22f92629d3d1a9f9b02
 int head = 0;
 int tail = 0;
 int n_elem = 0;
-int IsFull_Flag = 0;
-
-
-int history_buffer_full(void){
-    return(IsFull_Flag);
-}
-
-int history_buffer_empty(void){
-    int temp = 0;
-    if ((head == tail) && (IsFull_Flag != 1)){
-        temp = 1;
-    }
-    return(temp);
-}
-
-void history_WritetoBuffer(int data_element){
-    //write into circular buffer
-    if (history_buffer_full())
-    {
-
-    }
-    else{
-        HistoryBuffer[head]=data_element;
-        head = (head + 1)%history_buffer_size;
-        if (head == tail){
-            //
-            IsFull_Flag = 1;
-        }
-    }
-}
-
-void history_ReadBuffer(int index, struct command *cmd) {
-    if (history_buffer_empty() || index < 1 || index > n_elem) {
-        printf("Incorrect usage of myhistory\n");
-        return;
-    }
-
-    // Calculate the actual index in the circular buffer
-    int actual_index = (tail + index - 1) % history_buffer_size;
-
-    // Copy the command at the calculated index to the provided cmd pointer
-    *cmd = HistoryBuffer[actual_index];
-}
-
-// Function to execute a command from the history buffer
-void execute_command_from_buffer(int index) {
-    struct command *cmd = &HistoryBuffer[(tail + index - 1) % history_buffer_size];
-    // Prepare arguments for execvp
-    char *args[MAX_COMMANDS + 1];
-    int k = 0;
-    for (int j = 0; j < cmd->num_commands; j++) {
-        for (int l = 0; l < cmd->args[j]; l++) {
-            args[k++] = cmd->argvv[j][l];
-        }
-    }
-    args[k] = NULL;  // Null-terminate the argument list
-
-    // Execute the command using execvp
-    execvp(args[0], args);
-
-    // If execvp fails, print an error message
-    perror("Error executing command");
-    exit(EXIT_FAILURE);
-}
-
-struct command *read_HistoryBuffer(int index) {
-    if (history_buffer_empty()) {
-        printf("History buffer is empty\n");
-        return NULL;
-    }
-
-    if (index < 1 || index > history_buffer_size) {
-        printf("Invalid index\n");
-        return NULL;
-    }
-
-    // Calculate the actual index in the circular buffer
-    int actual_index = (tail + index - 1) % history_buffer_size;
-
-    return &HistoryBuffer[actual_index];
-}
-
-void display_command(struct command *cmd) {
-    printf("Command content:\n");
-    for (int i = 0; i < cmd->num_commands; i++) {
-        printf("Command %d: ", i + 1);
-        for (int j = 0; j < cmd->args[i]; j++) {
-            printf("%s ", cmd->argvv[i][j]);
-        }
-        printf("\n");
-    }
-}
 
 void free_command(struct command *cmd)
 {
@@ -250,38 +148,7 @@ int main(int argc, char *argv[])
     char *cmd_line = NULL;
     char *cmd_lines[10];
 
-<<<<<<< HEAD
-	if (!isatty(STDIN_FILENO)) {
-		cmd_line = (char*)malloc(100);
-		while (scanf(" %[^\n]", cmd_line) != EOF){
-			if(strlen(cmd_line) <= 0) return 0;
-			cmd_lines[end] = (char*)malloc(strlen(cmd_line)+1);
-			strcpy(cmd_lines[end], cmd_line);
-			end++;
-			fflush (stdin);
-			fflush(stdout);
-		}
-	}
-
-	/*********************************/
-
-	char ***argvv = NULL;
-	int num_commands;
-
-	HistoryBuffer = (struct command*) malloc(history_size *sizeof(struct command));
-	int run_history = 0;
-
-	while (1)
-	{
-		int status = 0;
-		int command_counter = 0;
-		int in_background = 0;
-		signal(SIGINT, siginthandler);
-
-		if (run_history)
-=======
     if (!isatty(STDIN_FILENO))
->>>>>>> 726b356b99ab985e5592f22f92629d3d1a9f9b02
     {
         cmd_line = (char *)malloc(100);
         while (scanf(" %[^\n]", cmd_line) != EOF)
@@ -358,102 +225,6 @@ int main(int argc, char *argv[])
             {
                 perror("Maximum number of executable commands is 3");
             }
-<<<<<<< HEAD
-			else {
-                //print_command(argvv, filev, in_background);
-                int fd[2];
-                pipe(fd);
-                // execute commands
-                if (n_elem == history_size) {
-                        // Liberar el comando más antiguo
-                        free_command(&history[head]);
-                        head = (head + 1) % history_size;
-                    } else {
-                        n_elem++;
-                    }
-                for (int i = 0; i < command_counter; ++i){
-<<<<<<< HEAD
-=======
-                    // Almacenar el nuevo comand
-                    store_command(argvv, filev, in_background, &history[tail]);
-                    tail = (tail + 1) % history_size;
-
->>>>>>> 9e01d286485a5538fe3a5438ed9d2fd285746a94
-                    if (strcmp(argvv[i][0], "mycalc") == 0)
-                        {
-                        if (argvv[i][1] == NULL || argvv[i][2] == NULL || argvv[i][3] == NULL)
-                            {
-                            printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
-                            }
-                        else
-                            {
-                            int num1, num2,result;
-                            char *endptr;
-                            char *operator = argvv[i][2];
-                            num1 = atoi(argvv[i][1]);
-                            num2 = atoi(argvv[i][3]);
-                            result = 0;
-
-                            if (strcmp(operator, "add") == 0)
-                                {
-                                    result = num1 + num2;
-                                    internal_accumulator = internal_accumulator + result;
-                                    printf("[OK] %d + %d = %d; Acc %d\n", num1, num2, result, internal_accumulator);
-                                }
-                            else if (strcmp(operator, "mul") == 0)
-                                {
-                                    result = num1 * num2;
-                                    printf("[OK] %d * %d = %d\n", num1, num2, result);
-                                }
-                            else if (strcmp(operator, "div") == 0)
-                                {
-                                    result = num1 / num2;
-                                    int remainder = num1 % num2;
-                                    printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
-                                }
-                            }
-                        }
-<<<<<<< HEAD
-                    else if (strcmp(argvv[i][0], "myhistory") == 0) {
-                        // If myhistory command is executed without arguments, show history
-                        if (argc == 1){
-                            //if the history is empty
-                            if (n_elem == 0){
-                                printf("No commands executed yet\n");
-                                return;
-                            }
-                            //Now we will print all the commands executed
-                            printf("Myhistory:\n");
-                            for (int i = 0; i < n_elem; i++){
-                                struct command *cmd = &HistoryBuffer[(tail + i)%history_buffer_size];
-                                printf("%d. ", i + 1);
-                                for (int j = 0; j < cmd->num_commands; j++) {
-                                    for (int k = 0; k < cmd->args[j]; k++) {
-                                        printf("%s ", cmd->argvv[j][k]);
-                                    }
-                                    printf("\n");
-                                }
-                            }
-                        }
-                        else{
-                            // If we have a number between 1-n_elem after "myhistory"
-                            // we take the index given in the command
-                            int index = atoi(argvv[i][1]);
-                            if (index < 1 || index > n_elem){
-                                printf("Incorrect usage of the myhistory command");
-                                return;
-                            }
-                            //Now we read the command in position index
-                            history_ReadBuffer(index, &cmd);
-
-                            )
-                            execute_command_from_buffer(index);
-                        }
-                    }
-                
-=======
-                    else if (strcmp(argvv[i][0], "myhistory") == 0)
-=======
         }
 
         for (int i = 0; i < command_counter; i++)
@@ -489,7 +260,6 @@ int main(int argc, char *argv[])
                     num2 = atoi(argv_execvp[3]);
                     result = 0;
                     if (strcmp(operator, "add") == 0)
->>>>>>> 726b356b99ab985e5592f22f92629d3d1a9f9b02
                     {
                         result = num1 + num2;
                         internal_accumulator = internal_accumulator + result;
@@ -533,11 +303,6 @@ int main(int argc, char *argv[])
                             printf("| ");
                         }
                     }
-<<<<<<< HEAD
-                    
->>>>>>> 9e01d286485a5538fe3a5438ed9d2fd285746a94
-                    else {
-=======
                     printf("\n");
                 }
             }
@@ -559,7 +324,6 @@ int main(int argc, char *argv[])
 
                 for (int i = 0; i < cmd.num_commands; i++)
                 {
->>>>>>> 726b356b99ab985e5592f22f92629d3d1a9f9b02
                     pid_t pid = fork();
                     if (pid == 0)
                     {
@@ -828,15 +592,6 @@ int main(int argc, char *argv[])
                             perror("fail in close dup");
                         }
                     }
-
-                    // each time a command is executed, it will be writen into the history buffer
-                    struct command cmd;
-                    store_command(argvv, filev, in_background, &cmd);
-                    HistoryBuffer[head] = cmd;
-                    head = (head + 1) % history_buffer_size;
-                    if (head == tail) {
-                        IsFull_Flag = 1;
-                        }
                 }
             }
             if (filehandle != 0)
