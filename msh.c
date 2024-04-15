@@ -229,28 +229,43 @@ int main(int argc, char *argv[])
             }
             else
             {
+
                 int num1, num2, result;
-                char *endptr;
-                char *operator= argv_execvp[2];
-                num1 = atoi(argv_execvp[1]);
-                num2 = atoi(argv_execvp[3]);
-                result = 0;
-                if (strcmp(operator, "add") == 0)
-                {
-                    result = num1 + num2;
-                    internal_accumulator = internal_accumulator + result;
-                    printf("[OK] %d + %d = %d; Acc %d\n", num1, num2, result, internal_accumulator);
+                // check if we are working with numbers
+                if (sscanf(argv_execvp[1], "%d", &num1) != 1) {
+                    printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
                 }
-                else if (strcmp(operator, "mul") == 0)
-                {
-                    result = num1 * num2;
-                    printf("[OK] %d * %d = %d\n", num1, num2, result);
+                else if (sscanf(argv_execvp[3], "%d", &num2) != 1) {
+                    printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
                 }
-                else if (strcmp(operator, "div") == 0)
+
+                else
                 {
-                    result = num1 / num2;
-                    int remainder = num1 % num2;
-                    printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
+                    char *endptr;
+                    char *operator= argv_execvp[2];
+                    num1 = atoi(argv_execvp[1]);
+                    num2 = atoi(argv_execvp[3]);
+                    result = 0;
+                    if (strcmp(operator, "add") == 0)
+                    {
+                        result = num1 + num2;
+                        internal_accumulator = internal_accumulator + result;
+                        printf("[OK] %d + %d = %d; Acc %d\n", num1, num2, result, internal_accumulator);
+                    }
+                    else if (strcmp(operator, "mul") == 0)
+                    {
+                        result = num1 * num2;
+                        printf("[OK] %d * %d = %d\n", num1, num2, result);
+                    }
+                    else if (strcmp(operator, "div") == 0)
+                    {
+                        result = num1 / num2;
+                        int remainder = num1 % num2;
+                        printf("[OK] %d / %d = %d; Remainder %d\n", num1, num2, result, remainder);
+                    }
+                    else {
+                        printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
+                    }
                 }
             }
         }
