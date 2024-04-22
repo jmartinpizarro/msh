@@ -1,4 +1,4 @@
-# MSH to Linux Environment
+# MSH on Linux Environment
 
 The MSH Project aims to understand the usage of pipes, redirections and more in C programming language.
 
