@@ -1,2 +1,2 @@
-# os_p2_100495861_100495877_100495840
+# Adapted Minishell to Linux Environment
 Minishell made in C
