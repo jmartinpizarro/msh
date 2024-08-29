@@ -21,7 +21,7 @@ After that, a new file *msh* will be added to your directory. For executing it, 
 
 1. For running the tests, you will to grant special permission. For doing so, execute the following command on your machine:
 ```bash
-chmod +x checker os p2.sh
+chmod +x checker_os_p2.sh
 ```
 
 2. After doing so, you will be able to execute the file *checker_os_p2.sh*.
